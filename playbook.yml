@@ -1,0 +1,29 @@
+- hosts: 127.0.0.1
+  gather_facts: no
+  vars:
+    vault_token: "enter_u_vault_secret_token"
+    vault_addr: "http://vault:8200"
+    vault_path: "ssh/secret"
+    prkey_path: "/home/user/private_key"
+
+  tasks:
+    - name: pull private key
+      set_fact:
+        vault_resp: "{{ lookup('community.hashi_vault.hashi_vault', 'secret={{vault_path}} token={{vault_token}}  url={{vault_addr}}') }}"
+
+    - name: save ssh key in st10
+      copy:
+        content: "{{vault_resp.private_key}}"
+        dest: "{{prkey_path}}"
+        mode: "0600"
+
+- hosts: testserver
+  remote_user: someuser
+  vars:
+    ansible_ssh_private_key_file: "/home/user/private_key"
+  tasks:
+    - name: pull flag.txt form testserver
+      fetch:
+        src: "/home/someuser/flag.txt"
+        dest: "/home/user/data.txt"
+        flat: yes
